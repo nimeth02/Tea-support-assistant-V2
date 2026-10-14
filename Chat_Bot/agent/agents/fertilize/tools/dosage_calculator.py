@@ -9,7 +9,10 @@ from langchain.tools import Tool
 import agent
 from agent.db.sqlite.tea_farm_db import tea_farm_db
 
-MODEL_PATH = Path(agent.__file__).resolve().parent.parent.parent / "ML Models" / "tea_fertilizer_model.pkl"
+MODEL_PATH = (
+    Path(agent.__file__).resolve().parent.parent.parent
+    / "ML Models" / "Tea Fertilizer Dosage" / "model" / "tea_fertilizer_model.pkl"
+)
 
 DEFAULT_RESPONSE = (
     "Please make sure your tea land details are registered, or ask something like "

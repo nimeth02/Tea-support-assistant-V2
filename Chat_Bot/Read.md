@@ -27,7 +27,9 @@ observability/  Tracing, metrics, logging, SQLite trace store, /metrics + /obser
 frontend/       Streamlit UI (chat + observability dashboard)
 data/           Runtime data (observability.db) - gitignored
 
-../ML Models/   (sibling of Chat_Bot/, repo root) tea_fertilizer_model.pkl
+../ML Models/   (sibling of Chat_Bot/, repo root) Tea Fertilizer Dosage/model/tea_fertilizer_model.pkl,
+                  Tea Disease Classification/model/tea_disease_resnet18.pkl (not yet wired to DiseaseAgent),
+                  mlflow/ (shared MLflow tracking store for both)
 ```
 
 Dependency direction: `backend` -> `agent`, `backend` -> `observability`. The `agent` package does not import from `backend`.

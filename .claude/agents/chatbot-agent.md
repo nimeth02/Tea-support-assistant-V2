@@ -27,7 +27,7 @@ You specialize in the `Chat_Bot/agent/` package: the LangChain/LangGraph logic t
 
 ## External dependency to know about
 
-`agents/fertilize/tools/dosage_calculator.py` loads a joblib/scikit-learn model from **outside** this package: `MODEL_PATH = Path(agent.__file__).resolve().parent.parent.parent / "ML Models" / "tea_fertilizer_model.pkl"` - i.e. the repo-root `ML Models/` folder, a sibling of `Chat_Bot/`, not anything under `agent/`. If that model is retrained or moved, this is the path to update; coordinate with whoever owns `ML Models/`.
+`agents/fertilize/tools/dosage_calculator.py` loads a joblib/scikit-learn model from **outside** this package: `MODEL_PATH = Path(agent.__file__).resolve().parent.parent.parent / "ML Models" / "Tea Fertilizer Dosage" / "model" / "tea_fertilizer_model.pkl"` - i.e. the repo-root `ML Models/` folder, a sibling of `Chat_Bot/`, not anything under `agent/`. If that model is retrained or moved, this is the path to update; coordinate with whoever owns `ML Models/`.
 
 ## Conventions
 
