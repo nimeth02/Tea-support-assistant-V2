@@ -1,0 +1,51 @@
+[
+  {
+    "id": "disease-blister-blight",
+    "category": "disease",
+    "disease": "Blister blight",
+    "text": "Blister blight is caused by the fungus Exobasidium vexans and is the most damaging leaf disease of tea in Sri Lanka, especially in high and mid elevations during long wet, misty periods. Small translucent, pale spots appear on young leaves and stems. Within a week they grow into pale pink or white blisters that are sunken on top and raised underneath; infected shoots can die back. It attacks only tender leaves, so the pluckable crop is lost directly.",
+    "instruction": "Pluck tender shoots at short intervals so there is less young leaf for the fungus. Reduce heavy overhead shade and keep the field airy. During wet seasons apply a copper fungicide (copper oxide or copper hydroxide) at the interval recommended by the Tea Research Institute, and stop when dry weather returns. Avoid pruning when blister blight pressure is high because new flush is very susceptible."
+  },
+  {
+    "id": "disease-grey-blight",
+    "category": "disease",
+    "disease": "Grey blight",
+    "text": "Grey blight is caused by Pestalotiopsis theae. It infects mature leaves through wounds made by plucking, pruning, insects or sun scorch. Lesions start as small brown spots that grow into grey or light brown patches with concentric rings and tiny black dots (fruiting bodies) on the surface. Severe attacks cause leaf drop and weak bushes, mostly in stressed or badly nourished fields.",
+    "instruction": "Avoid damaging leaves during plucking and pruning, and do not pluck when leaves are wet. Remove and bury or burn heavily infected leaves. Improve bush health with balanced fertilizer and shade. Where the attack is severe, apply a copper fungicide after pruning to protect the cut surfaces and new growth."
+  },
+  {
+    "id": "disease-brown-blight",
+    "category": "disease",
+    "disease": "Brown blight",
+    "text": "Brown blight is caused by Colletotrichum species. It appears mostly on mature leaves as brown spots that enlarge into round or irregular patches with concentric rings; the centre may become grey and the leaf edge curls. It often follows sun scorch, drought stress or hail damage, and is common in young tea and nurseries.",
+    "instruction": "Give young plants and nurseries enough shade and water during dry spells. Remove badly affected leaves. Keep the bushes well fed so they recover quickly. Apply a copper based fungicide if the spread continues in wet weather."
+  },
+  {
+    "id": "disease-red-rust",
+    "category": "disease",
+    "disease": "Red rust",
+    "text": "Red rust is caused by the alga Cephaleuros parasiticus, not by a fungus. It shows as orange to red velvety patches on young stems and on the upper surface of leaves. Stems may crack and die back. It is a sign of a weak bush: poor drainage, poor nutrition, waterlogging or very heavy shade make it worse.",
+    "instruction": "Improve drainage with proper drains and avoid waterlogging. Apply balanced fertilizer, especially nitrogen, to rebuild bush vigour. Thin out heavy shade. Spray copper fungicide on affected bushes in two or three rounds at two week intervals during the wet season."
+  },
+  {
+    "id": "pest-tea-mosquito-bug",
+    "category": "pest",
+    "pest": "Tea mosquito bug (Helopeltis)",
+    "text": "The tea mosquito bug (Helopeltis species) sucks sap from tender shoots, buds and young leaves. Each feeding point becomes a dark brown or black water soaked spot. Leaves curl, shoots turn black and dry up, and the bush may show dieback of young growth. Damage is worst in shaded, humid fields and after rain.",
+    "instruction": "Pluck tender shoots regularly, including damaged ones, so eggs and nymphs are removed. Remove alternate host plants and weeds around the field. Reduce excessive shade. If the attack is heavy, use neem based products or an insecticide recommended by the extension officer, spraying the young shoots in the early morning or evening."
+  },
+  {
+    "id": "pest-shot-hole-borer",
+    "category": "pest",
+    "pest": "Shot hole borer (Xyleborus fornicatus)",
+    "text": "The shot hole borer is a tiny beetle that bores into tea branches of pencil thickness and makes tunnels (galleries) inside the wood. Infested branches show small round holes, swellings, and break easily in wind or during plucking. Yield drops because the bush loses branches and cannot form a good frame. It is a serious pest in low and mid country tea.",
+    "instruction": "Prune and remove heavily infested branches and burn them so the beetles cannot spread. Keep bushes healthy with proper fertilizer and shade. At pruning time apply the recommended protective treatment on the cut surfaces and new wood as advised by the Tea Research Institute. Avoid leaving pruned wood in the field."
+  },
+  {
+    "id": "pest-red-spider-mite",
+    "category": "pest",
+    "pest": "Red spider mite (Oligonychus coffeae)",
+    "text": "Red spider mites are very small reddish mites that live on the upper surface of mature leaves. Feeding gives the leaves a bronze, rusty or coppery look, first along the mid rib and then over the whole leaf; leaves dry and fall. Attacks build up in hot, dry weather, on dusty roadside bushes and in fields with little shade.",
+    "instruction": "Keep good shade and avoid water stress during dry months. Do not apply broad insecticides that kill the natural predators of mites. Wash dusty roadside bushes if possible. When bronzing spreads, spray a wettable sulphur or an acaricide recommended by the extension officer, covering the upper leaf surface well."
+  }
+]

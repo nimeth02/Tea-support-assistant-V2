@@ -1,11 +1,16 @@
+import os
+
 import pandasai as pai
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Load your CSV file
 file = pai.read_csv("/path/to/your/file.csv")
 
 
-pai.api_key.set("PAI-6021dae7-863a-46b4-a2e6-b3d917281892")
+pai.api_key.set(os.environ["PANDASAI_API_KEY"])
 # Save your dataset configuration
 df = pai.DataFrame({
     "country": ["US", "UK", "France"],

@@ -1,0 +1,6 @@
+.env
+.venv/
+__pycache__/
+/data/
+# local Chroma vector store - rebuild with: python -m agent.db.vector.chroma.ingest_chroma
+agent/db/data/chroma/
