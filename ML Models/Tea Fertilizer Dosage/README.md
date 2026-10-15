@@ -42,3 +42,26 @@ experiment - and registers the trained model under
 `tea-fertilizer-dosage-rf` in the MLflow Model Registry.
 
 To browse runs and registered versions, see `ML Models/mlflow/README.md`.
+
+## Testing
+
+```
+python -m pytest tests/
+```
+
+`tests/test_model.py` doesn't read `model/tea_fertilizer_model.pkl` - it
+fetches whatever version carries the `champion` alias in the Model Registry
+and tests *that*, so the suite always checks what's actually promoted, on
+any machine, even one with an empty `model/` folder. Three layers:
+
+- **Quality gate** - the champion's own logged `mae`/`rmse`/`r2` must clear
+  an agreed floor.
+- **Model contract** - the saved bundle still has the keys and feature
+  order `dosage_calculator.py` expects.
+- **Behavioral** - determinism, plus directional checks (e.g. more land
+  should never recommend *less* fertilizer) that a plain accuracy number
+  wouldn't catch.
+
+If no version has the `champion` alias yet, the suite skips with a clear
+reason instead of failing - promote a version first (see
+`ML Models/mlflow/README.md`).

@@ -36,7 +36,15 @@ trained models through MLflow, pointed at the **shared** store in
 `mlflow/` (its own README explains the setup) - one `mlflow ui` process
 covers both projects' experiments (`tea-fertilizer-dosage`,
 `tea-disease-classification`) and their registered models
-(`tea-fertilizer-dosage-rf`, `tea-disease-resnet18`).
+(`tea-fertilizer-dosage-rf`, `tea-disease-resnet18`). Both registered
+models currently have a `champion` alias set.
+
+Each sub-project also has `tests/test_model.py` (`python -m pytest tests/`
+from that folder) - these fetch the `champion`-aliased version through the
+registry and test *that*, not a local file, across three layers (quality
+gate against logged metrics, model/bundle contract, and behavioral checks
+like determinism and directional expectations). If you retrain and
+promote a new champion, rerun these before considering it done.
 
 ## Conventions
 

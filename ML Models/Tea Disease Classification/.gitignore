@@ -5,3 +5,4 @@ __pycache__/
 mlruns/
 mlartifacts/
 mlflow.db
+.pytest_cache/

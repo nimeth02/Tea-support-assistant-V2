@@ -5,8 +5,10 @@ from pathlib import Path
 import joblib
 import numpy as np
 from langchain.tools import Tool
+from pydantic import ValidationError
 
 import agent
+from agent.agents.fertilize.tools.schemas import LandFeatures
 from agent.db.sqlite.tea_farm_db import tea_farm_db
 
 MODEL_PATH = (
@@ -42,6 +44,17 @@ def dosage_calculator_by_user(userId) -> str:
     days_since = _days_since_last_fertilization(user_id)
 
     try:
+        features = LandFeatures(
+            land_size=land_data["landSize"],
+            plant_amount=land_data["plantAmount"],
+            degree=land_data["degree"],
+            days_since_last_fert=days_since,
+        )
+    except ValidationError as e:
+        print(f"Invalid land data for user {user_id}: {e}")
+        return "Your registered land details look invalid or incomplete. " + DEFAULT_RESPONSE
+
+    try:
         model_artifacts = joblib.load(MODEL_PATH)
         model = model_artifacts["model"]
         scaler = model_artifacts["scaler"]
@@ -51,7 +64,7 @@ def dosage_calculator_by_user(userId) -> str:
         return "Model error. " + DEFAULT_RESPONSE
 
     input_data = np.array(
-        [[land_data["landSize"], land_data["plantAmount"], land_data["degree"], days_since]]
+        [[features.land_size, features.plant_amount, features.degree, features.days_since_last_fert]]
     )
     print(input_data)
 

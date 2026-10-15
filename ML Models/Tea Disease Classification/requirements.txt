@@ -1,2 +1,3 @@
 kagglehub
 mlflow
+pytest

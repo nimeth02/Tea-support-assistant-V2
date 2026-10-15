@@ -6,9 +6,11 @@ from pathlib import Path
 import torch
 from langchain.tools import Tool
 from PIL import Image
+from pydantic import ValidationError
 from torchvision import transforms
 
 import agent
+from agent.agents.disease.tools.schemas import ImageInput
 
 MODEL_PATH = (
     Path(agent.__file__).resolve().parent.parent.parent
@@ -30,14 +32,19 @@ def _load_bundle() -> dict:
 def classify_leaf_image(image_path: str) -> str:
     """Predict the disease/pest class for the tea leaf photo at image_path."""
     try:
+        validated = ImageInput(image_path=image_path)
+    except ValidationError as e:
+        return f"Invalid image input: {e}"
+
+    try:
         bundle = _load_bundle()
     except Exception as e:
         return f"Could not load the disease classification model: {e}"
 
     try:
-        image = Image.open(image_path.strip()).convert("RGB")
+        image = Image.open(validated.image_path).convert("RGB")
     except Exception as e:
-        return f"Could not open the image file ({image_path}): {e}"
+        return f"Could not open the image file ({validated.image_path}): {e}"
 
     transform = transforms.Compose([
         transforms.Resize((bundle["img_size"], bundle["img_size"])),
