@@ -53,6 +53,32 @@ copy .env.example .env        # then set GEMINI_API_KEY
 .venv\Scripts\python -m streamlit run frontend\streamlit_app.py --server.port 8510
 ```
 
+## Agent variants (four versions, four UIs, four LangSmith projects)
+
+The same tea assistant is built four ways. Each one has its own backend, its own Streamlit UI and
+its own LangSmith project, so you can compare them side by side:
+
+| key | folder | how it works | backend | UI | LangSmith project |
+|---|---|---|---|---|---|
+| `agent` | `agent/` | LangGraph graph: classify intent, route to one expert | :8001 | http://localhost:8510 | `tea-support-agent-langgraph` |
+| `langchain` | `agent (langchain)/` | Supervisor LLM calls experts as tools | :8002 | http://localhost:8511 | `tea-support-agent-langchain` |
+| `a2a` | `agent A2A/` | Supervisor messages expert servers over A2A (also :9101-9103) | :8003 | http://localhost:8512 | `tea-support-agent-a2a` |
+| `crewai` | `agent (crewAI)/` | CrewAI manager delegates to expert crew members | :8004 | http://localhost:8513 | `tea-support-agent-crewai` |
+
+```
+.venv\Scripts\python launch.py up langchain   # backend + UI for one variant (Ctrl+C stops both)
+.venv\Scripts\python launch.py up all         # all four at once
+.venv\Scripts\python launch.py list           # ports and LangSmith projects
+```
+
+Why separate processes: every variant's code imports itself as `agent` (`from agent.config ...`),
+so two variants can't be loaded in one Python process. `agent_loader.py` makes the chosen folder
+act as `agent`, picked by the `AGENT_VARIANT` env var (default `agent`); `variants.py` lists the
+ports and projects. Each UI (`frontend/app_<key>.py`, shared parts in `frontend/ui_common.py`)
+draws its own architecture diagram, highlights the route/experts used for the last answer, and
+links each answer to its LangSmith trace. Each variant also keeps its own local observability DB
+(`data/observability.db` for `agent`, `data/observability_<key>.db` for the others).
+
 ## Vector DB (RAG)
 
 `VECTOR_DB_PROVIDER` in `.env` selects the backend; agents only ever call `get_vector_db("disease")` / `get_vector_db("help")`.
@@ -88,7 +114,16 @@ Behaviour:
 ### LangSmith (optional)
 
 Set in `.env` to turn on: `LANGSMITH_TRACING=true`, `LANGSMITH_API_KEY=<your key>` (free at
-https://smith.langchain.com), `LANGSMITH_PROJECT=tea-support-assistant`.
+https://smith.langchain.com). Each variant sends to its own project (table above); override a
+name with `LANGSMITH_PROJECT_<KEY>`, e.g. `LANGSMITH_PROJECT_CREWAI=my-crew-traces`.
+
+Every chat is wrapped in a root run named `chat:<variant>` (`observability/langsmith_tracing.py`)
+with the backend's trace id in its metadata, and the chat response includes `langsmith_url`.
+- LangGraph / LangChain: traced automatically underneath that root run.
+- A2A: the orchestrator passes LangSmith trace headers in the A2A message metadata, so the remote
+  expert servers' steps appear *inside* the same trace (distributed tracing).
+- CrewAI: CrewAI doesn't use LangChain, so `observability/langsmith_crewai.py` listens to CrewAI's
+  event bus and rebuilds the crew -> task -> agent -> LLM/tool tree in LangSmith.
 
 `agent/config.py` mirrors these into `os.environ` at import time (LangChain reads them straight
 from the environment, not from the `Settings` object), so no other code change is needed -

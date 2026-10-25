@@ -1,0 +1,20 @@
+# Docker (BuildKit) reads this file because it sits next to "Dockerfile" with the same name.
+# The build context is the whole repo, so send only what the image needs: everything is
+# excluded first, then the needed paths are let back in.
+*
+!Chat_Bot/requirements.txt
+!Chat_Bot/agent (crew AI , langchain)
+!Chat_Bot/backend
+!Chat_Bot/observability
+!Chat_Bot/frontend
+!Chat_Bot/agent_loader.py
+!Chat_Bot/variants.py
+!Chat_Bot/launch.py
+!ML Models/Tea Fertilizer Dosage/model/tea_fertilizer_model.pkl
+!ML Models/Tea Disease Classification/model/tea_disease_resnet18.pkl
+
+# Never ship these, even inside the allowed folders.
+**/__pycache__
+**/.pytest_cache
+**/.env
+**/db/data/chroma

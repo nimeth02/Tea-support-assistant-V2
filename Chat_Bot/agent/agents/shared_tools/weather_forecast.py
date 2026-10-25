@@ -6,7 +6,9 @@ first") belongs in the calling agent's prompt, not here.
 from typing import Dict, List
 
 import requests
-from langchain.tools import Tool
+from langchain_core.tools import Tool
+
+from agent.agents.shared_tools.schemas import LocationInput
 
 from agent.config import settings
 
@@ -39,6 +41,7 @@ def weather_forecast(location: str) -> List[Dict]:
 weather_forecast_tool = Tool(
     name="WeatherForecast",
     func=weather_forecast,
+    args_schema=LocationInput,
     description=(
         "Fetches a 14-day weather forecast (daily rain chance and precipitation in mm) for a location. "
         "Input: location name (string, e.g., 'Kandy')."

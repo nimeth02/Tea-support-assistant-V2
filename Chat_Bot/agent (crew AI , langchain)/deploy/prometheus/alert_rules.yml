@@ -1,0 +1,77 @@
+# Alert rules: each one is a question Prometheus asks every 15s. When the answer stays "yes"
+# for the `for:` time, the alert fires and goes to Alertmanager (which can message Slack,
+# email, PagerDuty, ...). Each alert says what to check first in its `runbook` annotation.
+groups:
+  - name: tea-agents
+    rules:
+      - alert: ExpertDown
+        expr: up{job="experts"} == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: "{{ $labels.expert }} expert ({{ $labels.framework }}) is down"
+          runbook: "docker compose logs {{ $labels.expert }}-agent; check /readyz on it."
+
+      - alert: BackendDown
+        expr: up{job="backend"} == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: "Backend / orchestrator is down - farmers get no answers"
+          runbook: "docker compose logs backend"
+
+      - alert: CircuitOpen
+        expr: max by (agent) (a2a_circuit_state) == 2
+        for: 1m
+        labels: {severity: warning}
+        annotations:
+          summary: "Orchestrator stopped calling the {{ $labels.agent }} expert (circuit open)"
+          runbook: "The expert failed several times in a row. Check its logs and LLM quota."
+
+      - alert: ExpertHighErrorRate
+        expr: |
+          sum by (agent) (rate(a2a_expert_requests_total{status=~"error|timeout"}[5m]))
+            / sum by (agent) (rate(a2a_expert_requests_total[5m])) > 0.2
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "More than 20% of {{ $labels.agent }} answers fail or time out"
+          runbook: "Often the LLM quota (Gemini free tier). Check a2a_expert_llm_fallbacks_total and logs."
+
+      - alert: ExpertSlow
+        expr: |
+          histogram_quantile(0.95, sum by (le, agent) (rate(a2a_expert_latency_seconds_bucket[10m]))) > 60
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "95% of {{ $labels.agent }} answers take longer than {{ $value | humanizeDuration }}"
+          runbook: "Rate limiting or a slow tool (weather API, web search). Check tool latency."
+
+      - alert: UnauthorizedA2ACalls
+        expr: sum by (agent) (increase(a2a_expert_requests_total{status="unauthorized"}[10m])) > 5
+        labels: {severity: warning}
+        annotations:
+          summary: "Calls to the {{ $labels.agent }} expert with a wrong or missing token"
+          runbook: "Either a misconfigured A2A_AUTH_TOKEN after a deploy, or someone probing the port."
+
+      - alert: PromptInjectionSpike
+        expr: sum(increase(guardrail_events_total{stage="input",reason="prompt_injection"}[10m])) > 10
+        labels: {severity: info}
+        annotations:
+          summary: "Many prompt-injection attempts blocked in the last 10 minutes"
+
+      - alert: ChatFailureRate
+        expr: |
+          sum(rate(a2a_orchestrator_turns_total{status=~"error|unavailable"}[5m]))
+            / sum(rate(a2a_orchestrator_turns_total[5m])) > 0.1
+        for: 5m
+        labels: {severity: critical}
+        annotations:
+          summary: "More than 10% of farmer messages end in an error"
+          runbook: "Check which expert's circuit is open, then that expert's logs."
+
+      - alert: CrewAIFallingBack
+        expr: sum(increase(a2a_expert_llm_fallbacks_total[30m])) > 5
+        labels: {severity: info}
+        annotations:
+          summary: "The disease expert keeps switching to fallback LLMs - primary model quota may be gone"

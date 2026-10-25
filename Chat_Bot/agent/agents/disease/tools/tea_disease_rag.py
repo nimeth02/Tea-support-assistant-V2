@@ -2,7 +2,9 @@
 import asyncio
 from typing import Any, Dict, List
 
-from langchain.tools import Tool
+from langchain_core.tools import Tool
+
+from agent.agents.shared_tools.schemas import SearchQuery
 
 from agent.db.vector import VectorDatabase
 
@@ -34,6 +36,7 @@ def make_tea_disease_rag_tool(vector_db: VectorDatabase) -> Tool:
     return Tool(
         name="TeaDiseaseRAG",
         func=lambda query: asyncio.run(rag_search(vector_db, query)),
+        args_schema=SearchQuery,
         description=(
             "Retrieves disease or pest information from a curated tea agriculture database. "
             "Use for detailed, accurate, and local information."

@@ -2,7 +2,9 @@
 from datetime import datetime
 from typing import Any, Dict, List, Union
 
-from langchain.tools import Tool
+from langchain_core.tools import Tool
+
+from agent.agents.shared_tools.schemas import UserIdInput
 
 from agent.db.sqlite.tea_farm_db import tea_farm_db
 
@@ -28,5 +30,6 @@ def fertilize_history_by_user(userId) -> Union[str, List[Dict[str, Any]]]:
 fertilize_history_tool = Tool(
     name="GetFertilizeHistoryByUser",
     func=fertilize_history_by_user,
+    args_schema=UserIdInput,
     description="Fetches fertilization history for a userId. Input: userId (integer, e.g., 3).",
 )

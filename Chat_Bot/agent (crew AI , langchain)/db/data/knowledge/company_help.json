@@ -1,0 +1,50 @@
+[
+  {
+    "id": "help-collection-days",
+    "question": "Which days does the company collect green tea leaves?",
+    "answer": "Green leaf is collected every day except Sundays and public holidays (Poya days and national holidays). On the day before a holiday collection runs as usual. If a holiday falls on a Monday, the Saturday collection is extended by two hours.",
+    "text": "Which days does the company collect green tea leaves? Green leaf is collected every day except Sundays and public holidays (Poya days and national holidays). On the day before a holiday collection runs as usual. If a holiday falls on a Monday, the Saturday collection is extended by two hours."
+  },
+  {
+    "id": "help-collection-time",
+    "question": "What time does the leaf collection lorry come?",
+    "answer": "The collection lorry visits each weighing point between 3.00 pm and 6.00 pm. Leaf should be ready at the weighing point by 3.00 pm. Leaf brought after the lorry leaves is not accepted because it would spoil overnight.",
+    "text": "What time does the leaf collection lorry come? The collection lorry visits each weighing point between 3.00 pm and 6.00 pm. Leaf should be ready at the weighing point by 3.00 pm. Leaf brought after the lorry leaves is not accepted because it would spoil overnight."
+  },
+  {
+    "id": "help-leaf-quality",
+    "question": "What leaf quality is accepted and how are deductions made?",
+    "answer": "Leaf should be the bud and two or three tender leaves, without coarse leaves, stalks, wet leaf or foreign matter. The field officer grades each bag. Coarse leaf above 15 percent is deducted from the weight, and wet or heated leaf can be rejected.",
+    "text": "What leaf quality is accepted and how are deductions made? Leaf should be the bud and two or three tender leaves, without coarse leaves, stalks, wet leaf or foreign matter. The field officer grades each bag. Coarse leaf above 15 percent is deducted from the weight, and wet or heated leaf can be rejected."
+  },
+  {
+    "id": "help-payment-date",
+    "question": "When is the monthly leaf payment made?",
+    "answer": "Payment for leaf supplied in a month is made by the 10th of the following month, to the bank account registered with the company. The payment slip shows the total weight, deductions, advances recovered and the net amount.",
+    "text": "When is the monthly leaf payment made? Payment for leaf supplied in a month is made by the 10th of the following month, to the bank account registered with the company. The payment slip shows the total weight, deductions, advances recovered and the net amount."
+  },
+  {
+    "id": "help-advance",
+    "question": "How can I get an advance on my leaf payment?",
+    "answer": "A supplier who has supplied leaf for at least three months can request an advance of up to 50 percent of the previous month's payment. Ask the field officer for the advance form before the 20th. The advance is recovered from the next payment.",
+    "text": "How can I get an advance on my leaf payment? A supplier who has supplied leaf for at least three months can request an advance of up to 50 percent of the previous month's payment. Ask the field officer for the advance form before the 20th. The advance is recovered from the next payment."
+  },
+  {
+    "id": "help-loan",
+    "question": "Does the company give loans for fertilizer or land improvement?",
+    "answer": "Yes. Registered suppliers can apply for a fertilizer loan twice a year and a land improvement loan once a year. Loans are given as fertilizer bags or paid to the supplier, and are recovered in equal monthly instalments from leaf payments over six to twelve months without interest.",
+    "text": "Does the company give loans for fertilizer or land improvement? Yes. Registered suppliers can apply for a fertilizer loan twice a year and a land improvement loan once a year. Loans are given as fertilizer bags or paid to the supplier, and are recovered in equal monthly instalments from leaf payments over six to twelve months without interest."
+  },
+  {
+    "id": "help-register",
+    "question": "How do I register as a new leaf supplier?",
+    "answer": "Bring your national identity card, proof of land ownership or lease, and a bank passbook to the nearest field office. The field officer will visit the land, record its size and location, and issue a supplier number within two weeks.",
+    "text": "How do I register as a new leaf supplier? Bring your national identity card, proof of land ownership or lease, and a bank passbook to the nearest field office. The field officer will visit the land, record its size and location, and issue a supplier number within two weeks."
+  },
+  {
+    "id": "help-contact",
+    "question": "Who do I contact about a payment problem or a complaint?",
+    "answer": "First speak to your field officer. If it is not solved within a week, call the supplier help desk at the factory office on working days between 8.30 am and 4.30 pm, or leave a written complaint at the weighing point. Complaints are answered within 14 days.",
+    "text": "Who do I contact about a payment problem or a complaint? First speak to your field officer. If it is not solved within a week, call the supplier help desk at the factory office on working days between 8.30 am and 4.30 pm, or leave a written complaint at the weighing point. Complaints are answered within 14 days."
+  }
+]

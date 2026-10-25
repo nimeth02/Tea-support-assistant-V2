@@ -1,0 +1,6 @@
+# Extra packages for testing and CI (on top of Chat_Bot/requirements.txt).
+pytest>=9
+anyio>=4
+ruff
+# Optional: log eval runs next to the ML models' training runs (set MLFLOW_TRACKING_URI)
+# mlflow
