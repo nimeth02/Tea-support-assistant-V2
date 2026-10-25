@@ -1,7 +1,5 @@
 from typing import Any, Dict
 
-from langchain.agents import create_react_agent
-
 from agent.agents.maintenance.tools import MAINTENANCE_TOOLS
 from agent.db.vector import get_vector_db
 from agent.prompt_templates import maintenance_prompt
@@ -16,13 +14,9 @@ class MaintenanceAgent:
         self.agent = self._initialize_agent()
 
     def _initialize_agent(self):
-        """Initialize the LangChain ReAct agent."""
+        """Placeholder until an LLM is wired in - then build it with langchain.agents.create_agent."""
         prompt = maintenance_prompt
-        # return create_react_agent(
-        #     llm=self.llm,
-        #     tools=self.tools,
-        #     prompt=prompt
-        # )
+        # return create_agent(self.llm, tools=self.tools, system_prompt=prompt)
 
     async def maintance(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Process the maintenance query using the agent."""

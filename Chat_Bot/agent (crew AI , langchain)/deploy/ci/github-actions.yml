@@ -1,0 +1,87 @@
+# CI/CD pipeline for the multi-framework A2A variant.
+# To turn it on, copy this file to <repo root>/.github/workflows/hybrid-agents.yml
+# and add the repository secrets GEMINI_API_KEY and A2A_AUTH_TOKEN.
+#
+#   test         every push / PR: unit + A2A contract tests (no LLM calls, free, ~1 min)
+#   image        every push to main: build the Docker image (proves it still builds)
+#   quality-gate nightly + on demand: start the real stack, smoke test, run the golden-set
+#                eval. Fails when routing accuracy drops below EVAL_MIN_ROUTING_ACCURACY,
+#                so a prompt or model change that breaks routing can't ship unnoticed.
+name: hybrid-agents
+
+on:
+  push:
+    paths: ["Chat_Bot/**", "ML Models/*/model/**"]
+  pull_request:
+    paths: ["Chat_Bot/**"]
+  schedule:
+    - cron: "0 2 * * *"     # nightly quality gate
+  workflow_dispatch:
+
+env:
+  VARIANT_DIR: "Chat_Bot/agent (crew AI , langchain)"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.13", cache: pip, cache-dependency-path: Chat_Bot/requirements.txt}
+      - name: Install
+        run: |
+          pip install -r Chat_Bot/requirements.txt
+          pip install -r "$VARIANT_DIR/requirements-dev.txt"
+      - name: Lint
+        run: ruff check "$VARIANT_DIR" --select E9,F63,F7,F82   # syntax errors and undefined names
+      - name: Tests
+        working-directory: Chat_Bot
+        run: python -m pytest "agent (crew AI , langchain)/tests" -q
+
+  image:
+    if: github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        run: docker build -f "$VARIANT_DIR/deploy/Dockerfile" -t tea-agents:${{ github.sha }} .
+
+  quality-gate:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write .env
+        working-directory: ${{ env.VARIANT_DIR }}/deploy
+        run: |
+          cp .env.example .env
+          sed -i "s|^GEMINI_API_KEY=.*|GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}|" .env
+          sed -i "s|^A2A_AUTH_TOKEN=.*|A2A_AUTH_TOKEN=${{ secrets.A2A_AUTH_TOKEN }}|" .env
+      - name: Start the stack
+        working-directory: ${{ env.VARIANT_DIR }}/deploy
+        run: docker compose up -d --build --wait backend
+      - name: Smoke test (cards, health, readiness, auth, one question per expert)
+        working-directory: ${{ env.VARIANT_DIR }}/deploy
+        run: docker compose exec -T backend python "agent (crew AI , langchain)/run_hybrid.py" smoke --ask
+      - name: Golden-set eval (quality gate)
+        working-directory: ${{ env.VARIANT_DIR }}/deploy
+        run: docker compose exec -T backend python "agent (crew AI , langchain)/run_hybrid.py" eval --delay 15
+      - name: Collect eval report
+        if: always()
+        working-directory: ${{ env.VARIANT_DIR }}/deploy
+        run: docker compose cp backend:/app/Chat_Bot/data/evals ./evals || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: eval-report, path: "${{ env.VARIANT_DIR }}/deploy/evals"}
+      - name: Logs on failure
+        if: failure()
+        working-directory: ${{ env.VARIANT_DIR }}/deploy
+        run: docker compose logs --tail 200
+      - name: Stop
+        if: always()
+        working-directory: ${{ env.VARIANT_DIR }}/deploy
+        run: docker compose down -v

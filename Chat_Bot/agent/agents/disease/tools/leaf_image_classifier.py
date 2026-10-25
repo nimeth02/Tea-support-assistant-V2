@@ -4,7 +4,9 @@ import pickle
 from pathlib import Path
 
 import torch
-from langchain.tools import Tool
+from langchain_core.tools import Tool
+
+from agent.agents.shared_tools.schemas import ImagePathInput
 from PIL import Image
 from pydantic import ValidationError
 from torchvision import transforms
@@ -65,6 +67,7 @@ def classify_leaf_image(image_path: str) -> str:
 leaf_image_classifier_tool = Tool(
     name="ClassifyLeafImage",
     func=classify_leaf_image,
+    args_schema=ImagePathInput,
     description=(
         "Identifies the disease or pest shown in a photo of a tea leaf using a trained image "
         "classification model. Input: the local file path to the uploaded image. Returns the "

@@ -52,7 +52,7 @@ python -m pytest tests/
 `tests/test_model.py` doesn't read `model/tea_fertilizer_model.pkl` - it
 fetches whatever version carries the `champion` alias in the Model Registry
 and tests *that*, so the suite always checks what's actually promoted, on
-any machine, even one with an empty `model/` folder. Three layers:
+any machine, even one with an empty `model/` folder. Four layers:
 
 - **Quality gate** - the champion's own logged `mae`/`rmse`/`r2` must clear
   an agreed floor.
@@ -61,6 +61,9 @@ any machine, even one with an empty `model/` folder. Three layers:
 - **Behavioral** - determinism, plus directional checks (e.g. more land
   should never recommend *less* fertilizer) that a plain accuracy number
   wouldn't catch.
+- **Latency** - inference must stay under 50ms (measured baseline:
+  ~4.3ms) - a future retrain getting much slower fails loudly instead of
+  shipping unnoticed.
 
 If no version has the `champion` alias yet, the suite skips with a clear
 reason instead of failing - promote a version first (see

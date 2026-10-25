@@ -1,0 +1,120 @@
+# The whole multi-framework A2A system plus its monitoring, on one machine.
+#
+#   cd "Chat_Bot/agent (crew AI , langchain)/deploy"
+#   cp .env.example .env        # then fill in GEMINI_API_KEY and A2A_AUTH_TOKEN
+#   docker compose up -d --build
+#
+#   UI           http://localhost:8514      chat
+#   Backend      http://localhost:8005      FastAPI (orchestrator) + /metrics
+#   Prometheus   http://localhost:9090      metrics + alert rules (Alerts tab)
+#   Grafana      http://localhost:3000      dashboard "Tea agents (A2A)"  (admin / admin)
+#
+# Each expert is its own container: it can crash, restart, scale and be upgraded on its own.
+
+x-agent-image: &agent-image
+  build:
+    context: ../../..                                          # repo root
+    dockerfile: Chat_Bot/agent (crew AI , langchain)/deploy/Dockerfile
+  image: tea-agents:latest
+  env_file: .env
+  restart: unless-stopped
+
+x-expert-urls: &expert-urls
+  A2A_DISEASE_AGENT_URL: http://disease-agent:9201
+  A2A_FERTILIZE_AGENT_URL: http://fertilize-agent:9202
+  A2A_HELP_AGENT_URL: http://help-agent:9203
+
+x-healthcheck: &healthcheck
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
+services:
+  disease-agent:            # CrewAI
+    <<: *agent-image
+    command: ["python", "agent (crew AI , langchain)/run_hybrid.py", "experts", "--agent", "disease"]
+    environment: *expert-urls
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9201/healthz')"]
+    deploy:
+      resources:
+        limits: {memory: 2g}   # torch + the ResNet18 model
+
+  fertilize-agent:          # LangChain
+    <<: *agent-image
+    command: ["python", "agent (crew AI , langchain)/run_hybrid.py", "experts", "--agent", "fertilize"]
+    environment: *expert-urls
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9202/healthz')"]
+    deploy:
+      resources:
+        limits: {memory: 1g}
+
+  help-agent:               # LangGraph
+    <<: *agent-image
+    command: ["python", "agent (crew AI , langchain)/run_hybrid.py", "experts", "--agent", "help"]
+    environment: *expert-urls
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9203/healthz')"]
+    deploy:
+      resources:
+        limits: {memory: 1g}
+
+  backend:                  # FastAPI + LangChain orchestrator (A2A client)
+    <<: *agent-image
+    command: ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8005"]
+    environment: *expert-urls
+    ports: ["8005:8005"]
+    volumes: ["backend-data:/app/Chat_Bot/data"]   # observability.db, eval reports
+    depends_on:
+      disease-agent: {condition: service_healthy}
+      fertilize-agent: {condition: service_healthy}
+      help-agent: {condition: service_healthy}
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8005/welcome')"]
+
+  ui:                       # Streamlit
+    <<: *agent-image
+    command: ["python", "-m", "streamlit", "run", "frontend/app_hybrid.py", "--server.port", "8514",
+              "--server.address", "0.0.0.0", "--server.headless", "true"]
+    environment:
+      <<: *expert-urls
+      TEA_API_URL: http://backend:8005
+    ports: ["8514:8514"]
+    depends_on: [backend]
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus-data:/prometheus
+    ports: ["9090:9090"]
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    volumes: ["./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro"]
+    ports: ["9093:9093"]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+    depends_on: [prometheus]
+    restart: unless-stopped
+
+volumes:
+  backend-data:
+  prometheus-data:

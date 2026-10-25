@@ -1,5 +1,7 @@
 """PruningGuide tool: pruning instructions (placeholder answer for now)."""
-from langchain.tools import Tool
+from langchain_core.tools import Tool
+
+from agent.agents.shared_tools.schemas import SearchQuery
 
 
 def pruning_guide(query: str) -> str:
@@ -10,5 +12,6 @@ def pruning_guide(query: str) -> str:
 pruning_guide_tool = Tool(
     name="PruningGuide",
     func=pruning_guide,
+    args_schema=SearchQuery,
     description="Provides pruning instructions based on plant age or season.",
 )

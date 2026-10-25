@@ -1,0 +1,16 @@
+# Alertmanager decides where fired alerts go. By default they are only shown in its UI
+# (http://localhost:9093). To get them in Slack, uncomment the slack receiver, paste a Slack
+# incoming-webhook URL, and set `receiver: slack` in the route.
+route:
+  receiver: default
+  group_by: [alertname, agent]
+  group_wait: 30s
+  repeat_interval: 4h
+
+receivers:
+  - name: default
+  # - name: slack
+  #   slack_configs:
+  #     - api_url: https://hooks.slack.com/services/XXX/YYY/ZZZ
+  #       channel: "#tea-agents-alerts"
+  #       send_resolved: true

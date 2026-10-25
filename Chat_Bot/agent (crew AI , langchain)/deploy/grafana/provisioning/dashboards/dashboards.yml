@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: tea-agents
+    folder: Tea Support Assistant
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

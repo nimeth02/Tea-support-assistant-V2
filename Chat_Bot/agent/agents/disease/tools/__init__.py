@@ -1,7 +1,7 @@
 """Tools available to the DiseaseAgent: its own RAG tool, the image classifier, and the shared web search."""
 from typing import List
 
-from langchain.tools import Tool
+from langchain_core.tools import Tool
 
 from agent.agents.disease.tools.leaf_image_classifier import leaf_image_classifier_tool
 from agent.agents.disease.tools.tea_disease_rag import make_tea_disease_rag_tool

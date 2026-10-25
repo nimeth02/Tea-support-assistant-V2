@@ -1,7 +1,9 @@
 """TeaLandDataByUser tool: a farmer's tea land records (location, size, slope, ...)."""
 from typing import Any, Dict, List
 
-from langchain.tools import Tool
+from langchain_core.tools import Tool
+
+from agent.agents.shared_tools.schemas import UserIdInput
 
 from agent.db.sqlite.tea_farm_db import tea_farm_db
 
@@ -21,5 +23,6 @@ def tea_land_data_by_user(userId) -> List[Dict[str, Any]]:
 tea_land_data_tool = Tool(
     name="TeaLandDataByUser",
     func=tea_land_data_by_user,
+    args_schema=UserIdInput,
     description="Retrieves tea land data (e.g., location, land size) for a userId. Input: userId (integer, e.g., 3).",
 )

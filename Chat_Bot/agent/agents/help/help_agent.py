@@ -65,6 +65,6 @@ class HelpAgent:
                 help_prompt.format(query=query, context=context)
             )
             print(response)
-            return response.content.strip().lower()
+            return response.text.strip()
         except Exception as e:
             return f"Failed to generate response: {str(e)}"

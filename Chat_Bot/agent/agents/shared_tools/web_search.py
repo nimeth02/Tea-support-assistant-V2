@@ -1,6 +1,8 @@
 """DuckDuckGoWebSearch tool (shared): web fallback when a local knowledge base is insufficient."""
 from duckduckgo_search import DDGS
-from langchain.tools import Tool
+from langchain_core.tools import Tool
+
+from agent.agents.shared_tools.schemas import SearchQuery
 
 
 def duckduckgo_search(query: str) -> str:
@@ -19,6 +21,7 @@ def duckduckgo_search(query: str) -> str:
 web_search_tool = Tool(
     name="DuckDuckGoWebSearch",
     func=duckduckgo_search,
+    args_schema=SearchQuery,
     description=(
         "Searches the web for general tea cultivation information (diseases, pests, fertilizer, weather, practices) "
         "when the local knowledge base is insufficient. Input: a search query (string)."

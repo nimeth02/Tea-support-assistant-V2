@@ -4,7 +4,9 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-from langchain.tools import Tool
+from langchain_core.tools import Tool
+
+from agent.agents.shared_tools.schemas import UserIdInput
 from pydantic import ValidationError
 
 import agent
@@ -88,5 +90,6 @@ def dosage_calculator_by_user(userId) -> str:
 dosage_calculator_tool = Tool(
     name="DosageCalculator",
     func=dosage_calculator_by_user,
+    args_schema=UserIdInput,
     description="Calculates fertilizer dosage in kg for a userId. Input: userId (integer, e.g., 3)",
 )

@@ -1,12 +1,16 @@
 """SQLite store for chat traces and their spans (LLM calls, tool calls, graph nodes)."""
+import os
 import sqlite3
 import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# <project root>/data/observability.db
-DB_PATH = Path(__file__).resolve().parents[1] / "data" / "observability.db"
+# <project root>/data/observability.db for the default "agent" variant, and
+# observability_<variant>.db for the others, so each variant's dashboard shows only its own chats.
+_VARIANT = os.getenv("AGENT_VARIANT", "agent")
+DB_PATH = Path(__file__).resolve().parents[1] / "data" / (
+    "observability.db" if _VARIANT == "agent" else f"observability_{_VARIANT}.db")
 _lock = threading.Lock()
 
 

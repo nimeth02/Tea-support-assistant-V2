@@ -1,0 +1,5 @@
+# Local Chroma store - rebuilt from db/data/knowledge/*.json with: run_hybrid.py ingest --reset
+db/data/chroma/
+# Real secrets for docker compose
+deploy/.env
+deploy/evals/

@@ -7,7 +7,8 @@ from PIL import Image
 
 from backend.models.chat import ChatResponse
 from agent.agents.orchestrator.orchestrator_agent import OrchestratorAgent
-from observability import ObservabilityCallback, metrics, store
+from agent_loader import active_variant
+from observability import ObservabilityCallback, langsmith_tracing, metrics, store
 
 router = APIRouter()
 
@@ -23,6 +24,24 @@ DEFAULT_IMAGE_QUERY = "Please identify the disease or pest affecting this tea le
 @router.get("/welcome")
 async def read_root():
     return {"message": "Welcome to the Chat API"}
+
+
+@router.get("/variant")
+async def variant_info():
+    """Which agent variant this backend runs, and where its LangSmith traces go (for the UI)."""
+    variant = active_variant()
+    info = {
+        "key": variant.key,
+        "title": variant.title,
+        "framework": variant.framework,
+        "langsmith_enabled": langsmith_tracing.tracing_enabled(),
+        "langsmith_project": variant.langsmith_project,
+        "langsmith_project_url": langsmith_tracing.project_url(variant),
+    }
+    if variant.key in ("a2a", "hybrid"):
+        from agent.config import settings
+        info["a2a_agent_urls"] = settings.a2a_agent_urls
+    return info
 
 
 async def _save_uploaded_image(image: UploadFile, trace_id: str) -> str:
@@ -55,6 +74,7 @@ async def chat(
     image: Optional[UploadFile] = File(default=None),
 ):
     trace_id = http_request.state.trace_id
+    variant = active_variant()
     userId = 3
     start = time.perf_counter()
     intent, response_text, status, error = "error", "", "ok", None
@@ -65,15 +85,20 @@ async def chat(
             raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
         orchestrator_agent = OrchestratorAgent()
-        response = await orchestrator_agent.process_chat(
-            query, userId, image_path=image_path, callbacks=[ObservabilityCallback(trace_id)]
-        )
+        # Root LangSmith run for this chat; everything the agent does is traced underneath it.
+        with langsmith_tracing.chat_run(variant, trace_id, query, userId, image_path) as ls_run:
+            response = await orchestrator_agent.process_chat(
+                query, userId, image_path=image_path, callbacks=[ObservabilityCallback(trace_id)]
+            )
+            if ls_run is not None:
+                ls_run.end(outputs=response)
         print(response)
         intent = response.get("intent") or "unknown"
         response_text = response.get("response", "")
         if intent == "error":
             status = "error"
-        return {**response, "trace_id": trace_id,
+        return {**response, "trace_id": trace_id, "variant": variant.key,
+                "langsmith_url": langsmith_tracing.run_url(variant, ls_run.id) if ls_run else None,
                 "latency_ms": round((time.perf_counter() - start) * 1000)}
     except HTTPException as he:
         status, error = "error", str(he.detail)

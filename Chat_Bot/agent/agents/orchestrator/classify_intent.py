@@ -46,8 +46,8 @@ class ClassifyIntent:
                 print(f"LLM API error: {str(e)}")
                 raise RuntimeError("Error processing with AI service")
 
-            intent = parse_intent(response.content)
-            print(f"classify intent : {intent!r} (raw: {response.content.strip()!r})")
+            intent = parse_intent(response.text)
+            print(f"classify intent : {intent!r} (raw: {response.text.strip()!r})")
 
             return {
                 "intent": intent,

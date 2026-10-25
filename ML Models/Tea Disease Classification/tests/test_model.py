@@ -1,13 +1,15 @@
 """Tests for the tea leaf disease classifier, found through MLflow's Model
 Registry's champion alias - not a hardcoded file path.
 
-Same three layers as the fertilizer model's test suite:
+Same layers as the fertilizer model's test suite:
 1. Quality gate   - would this version even be allowed to ship?
 2. Model contract - has the artifact's shape silently changed?
 3. Behavioral     - does the model's behavior make basic sense?
+4. Latency        - did it quietly get much slower?
 Plus an optional real-photo regression test, skipped when the (gitignored,
 not always downloaded) Kaggle dataset isn't present on this machine.
 """
+import time
 from pathlib import Path
 
 import mlflow
@@ -16,6 +18,13 @@ import pytest
 import torch
 from PIL import Image
 from torchvision import transforms
+
+# Current champion (ResNet18) measures ~33ms/image here. VGG16, evaluated as
+# a challenger in the comparison notebook, measured 138.9ms - 4x+ slower.
+# This ceiling has headroom over the baseline for a slower machine, but is
+# tight enough to still fail if something that heavy ever got promoted
+# without anyone noticing the speed cost.
+LATENCY_CEILING_MS = 75
 
 MODEL_NAME = "tea-disease-resnet18"
 MLFLOW_DB = (Path(__file__).parent.parent / ".." / "mlflow" / "mlflow.db").resolve()
@@ -121,7 +130,32 @@ def test_prediction_is_deterministic(champion_model, transform, synthetic_image)
     assert pred_a == pred_b
 
 
-# ---- 4. Real-photo regression test - skipped if the dataset isn't present ----
+# ---- 4. Latency: did it quietly get much slower? ----
+
+def test_inference_latency_under_threshold(champion_model, transform, synthetic_image):
+    """We measured ResNet18 (21-33ms) vs VGG16 (138.9ms) once, by hand, in
+    the comparison notebook. Nothing stopped that 4x+ difference from
+    happening again unnoticed on some future retrain - this makes "did it
+    get much slower" an enforced pass/fail instead of something you'd only
+    catch if you happened to time it yourself."""
+    input_tensor = transform(synthetic_image).unsqueeze(0)
+
+    with torch.no_grad():
+        champion_model(input_tensor)  # warm-up, not timed
+
+    n = 20
+    start = time.time()
+    with torch.no_grad():
+        for _ in range(n):
+            champion_model(input_tensor)
+    elapsed_ms = (time.time() - start) / n * 1000
+
+    assert elapsed_ms < LATENCY_CEILING_MS, (
+        f"inference took {elapsed_ms:.1f} ms/image, over the {LATENCY_CEILING_MS}ms ceiling"
+    )
+
+
+# ---- 5. Real-photo regression test - skipped if the dataset isn't present ----
 
 @pytest.mark.skipif(not DATASET_DIR.exists(), reason="Kaggle dataset not downloaded")
 def test_known_healthy_leaf_photo_predicts_healthy(champion_model, transform):

@@ -6,17 +6,26 @@ registry, and test *that* - so these tests keep testing whatever is
 actually promoted, through every future retrain, rather than whatever file
 happens to be sitting in model/ on this machine.
 
-Three layers, each catching a different kind of failure:
+Four layers, each catching a different kind of failure:
 1. Quality gate   - would this version even be allowed to ship?
 2. Model contract - has the artifact's shape silently changed?
 3. Behavioral     - does the model's behavior make domain sense?
+4. Latency        - did it quietly get much slower?
 """
+import time
 from pathlib import Path
 
 import joblib
 import mlflow
 import numpy as np
 import pytest
+
+# ~11x the measured baseline (~4.3ms) - loose enough to not be flaky on a
+# slower machine, tight enough to still fail if a future retrain (e.g. a
+# heavier model swapped in) makes this noticeably slower without anyone
+# noticing, the way VGG16 (138.9ms) silently would have for the disease
+# classifier if nothing asserted a ceiling.
+LATENCY_CEILING_MS = 50
 
 MODEL_NAME = "tea-fertilizer-dosage-rf"
 MLFLOW_DB = (Path(__file__).parent.parent / ".." / "mlflow" / "mlflow.db").resolve()
@@ -116,3 +125,25 @@ def test_longer_gap_since_fertilizing_does_not_recommend_less(champion_bundle):
     soon = _predict(champion_bundle, land_size=2.5, plant_amount=25000, degree=5, days_since=30)
     long_gap = _predict(champion_bundle, land_size=2.5, plant_amount=25000, degree=5, days_since=300)
     assert long_gap > soon
+
+
+# ---- 4. Latency: did it quietly get much slower? ----
+
+def test_inference_latency_under_threshold(champion_bundle):
+    """We measured a 6.5x latency difference between two architectures once,
+    by hand, in a comparison notebook (ResNet18 vs VGG16, for the other
+    model). Nothing stopped that from happening again unnoticed - this
+    makes "did it get much slower" an enforced pass/fail instead of
+    something you'd only catch if you happened to time it yourself."""
+    champion_bundle["model"]  # bundle already loaded; nothing to warm up beyond the first call
+    _predict(champion_bundle, land_size=2.5, plant_amount=25000, degree=6, days_since=120)  # warm-up
+
+    n = 20
+    start = time.time()
+    for _ in range(n):
+        _predict(champion_bundle, land_size=2.5, plant_amount=25000, degree=6, days_since=120)
+    elapsed_ms = (time.time() - start) / n * 1000
+
+    assert elapsed_ms < LATENCY_CEILING_MS, (
+        f"inference took {elapsed_ms:.1f} ms/prediction, over the {LATENCY_CEILING_MS}ms ceiling"
+    )

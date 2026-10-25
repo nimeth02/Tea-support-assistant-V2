@@ -1,6 +1,9 @@
+import asyncio
 from typing import Any, Dict
 
-from langchain.agents import AgentExecutor, create_react_agent
+from langchain.agents import create_agent
+from langchain.agents.middleware import ModelCallLimitMiddleware
+from langchain_core.messages import HumanMessage
 
 from agent.agents.fertilize.tools import FERTILIZE_TOOLS
 from agent.prompt_templates import fertilize_agent_prompt
@@ -8,18 +11,19 @@ from agent.services.llm_service import LLMService
 
 
 class FertilizeAgent:
-    """ReAct agent for fertilizer dosage, weather, land data and fertilization history."""
+    """Tool-calling agent for fertilizer dosage, weather, land data and fertilization history."""
 
     def __init__(self):
         self.llm = LLMService().get_llm()
         self.tools = FERTILIZE_TOOLS
-        self.agent = self._initialize_agent()
-
-    def _initialize_agent(self):
-        prompt = fertilize_agent_prompt.partial(
-            tool_names=", ".join([tool.name for tool in self.tools])
+        self.agent = create_agent(
+            self.llm,
+            tools=self.tools,
+            system_prompt=fertilize_agent_prompt,
+            # Raise an error after 5 LLM calls so a confused model can't loop forever.
+            middleware=[ModelCallLimitMiddleware(run_limit=5, exit_behavior="error")],
+            name="fertilize_agent",
         )
-        return create_react_agent(llm=self.llm, tools=self.tools, prompt=prompt)
 
     async def fertilize(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Process the fertilizer query using the agent."""
@@ -27,24 +31,19 @@ class FertilizeAgent:
         userId = state["userId"]
 
         try:
-            executor = AgentExecutor(
-                agent=self.agent,
-                tools=self.tools,
-                verbose=True,  # Enable verbose logging for debugging
-                max_iterations=5,  # Limit iterations to prevent infinite loops
-                timeout=60,
-                handle_parsing_errors=True,
-            )
-            result = executor.invoke({"input": query, "userId": userId})
+            # The tools take the userId as input, so it goes in the message for the model.
+            message = HumanMessage(f"{query}\n\nUserId: {userId}")
+            result = await asyncio.wait_for(self.agent.ainvoke({"messages": [message]}), timeout=60)
+            output = result["messages"][-1].text
 
-            print("agent result", result)
+            print("agent result", output)
 
             return {
                 "intent": state["intent"],
                 "history": state["history"]
-                + [f"User: {query}", f"Bot: {result['output']}"],
+                + [f"User: {query}", f"Bot: {output}"],
                 "query": query,
-                "response": result["output"],
+                "response": output,
             }
 
         except Exception as e:

@@ -35,7 +35,7 @@ python -m pytest tests/
 
 `tests/test_model.py` fetches whatever version carries the `champion`
 alias in the Model Registry and tests *that* - not whatever file happens
-to be sitting in `model/` on this machine. Three layers, plus one optional
+to be sitting in `model/` on this machine. Four layers, plus one optional
 test:
 
 - **Quality gate** - the champion's own logged `test_accuracy` must clear
@@ -44,6 +44,9 @@ test:
   7 expected classes, and the model still outputs a valid probability
   distribution over them.
 - **Behavioral** - determinism (same photo in, same prediction out, twice).
+- **Latency** - inference must stay under 75ms/image (measured baseline:
+  ~21-33ms; the VGG16 challenger measured 138.9ms, which this ceiling would
+  have caught).
 - **Real-photo regression** (skipped if the Kaggle dataset isn't
   downloaded) - a known healthy-leaf photo should still predict "Healthy
   leaf".
