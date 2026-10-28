@@ -1,11 +1,11 @@
-"""The four versions ("variants") of the tea agent, and where each one runs.
+"""The versions ("variants") of the tea agent, and where each one runs.
 
 Every variant folder imports itself as the `agent` package (e.g. `from agent.config import ...`),
 so two variants cannot live in the same Python process. Each one therefore gets its own
 backend process (own port), its own Streamlit UI (own port), its own LangSmith project and its
 own observability database. agent_loader.py makes the chosen folder act as `agent`.
 
-Start one with:   python launch.py up <key>      (keys: agent, langchain, a2a, crewai)
+Start one with:   python launch.py up <key>      (keys: agent, langchain, a2a, crewai, hybrid, voice)
 """
 import os
 from dataclasses import dataclass
@@ -57,6 +57,9 @@ VARIANTS: Dict[str, Variant] = {
         Variant("hybrid", "agent (crew AI , langchain)", "Multi-framework A2A",
                 "LangChain supervisor + CrewAI, LangChain and LangGraph experts over A2A (ports 9201-9203)",
                 8005, 8514, "#00695c", "tea-support-agent-hybrid"),
+        Variant("voice", "agent multilangual and voice also", "Multilingual + voice",
+                "LangGraph router that understands and answers in Sinhala, Tamil or English, by text or voice",
+                8006, 8515, "#ad1457", "tea-support-agent-voice"),
     ]
 }
 

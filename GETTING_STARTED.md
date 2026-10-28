@@ -25,14 +25,16 @@ the trained model files.
 | B3 | Chatbot: `a2a` | The experts are separate web servers, reached over the A2A protocol | `Chat_Bot/agent A2A/` | http://localhost:8512 |
 | B4 | Chatbot: `crewai` | A CrewAI manager that delegates to a crew of experts | `Chat_Bot/agent (crewAI)/` | http://localhost:8513 |
 | B5 | Chatbot: `hybrid` | Each expert uses a different framework (CrewAI, LangChain, LangGraph), connected over A2A, with production monitoring | `Chat_Bot/agent (crew AI , langchain)/` | http://localhost:8514 |
+| B6 | Chatbot: `voice` | The B1 router, plus Sinhala/Tamil/English translation and voice in and out | `Chat_Bot/agent multilangual and voice also/` | http://localhost:8515 |
 
-All five chatbot versions answer the same farmer questions. They differ only in how the agents
-are built and connected, so you can compare them side by side.
+All six chatbot versions answer the same farmer questions. They differ in how the agents are
+built and connected (B1-B5) or in how the farmer can talk to them (B6), so you can compare them
+side by side.
 
 Some terms used below:
 - **Virtual environment (`.venv`)**: a private folder of Python packages for one project, so
   projects don't break each other's packages.
-- **Variant**: one of the five chatbot versions (B1-B5).
+- **Variant**: one of the six chatbot versions (B1-B6).
 - **Backend**: the FastAPI server that runs the agents. **UI**: the Streamlit web page you chat in.
 - **A2A** (Agent2Agent): an open protocol that lets agents talk to each other over HTTP, even
   when they are built with different frameworks.
@@ -152,9 +154,9 @@ notebook does this).
 
 ---
 
-## Part B - The chatbot (five variants)
+## Part B - The chatbot (six variants)
 
-### B0. Shared setup (do this once for all five)
+### B0. Shared setup (do this once for all six)
 
 Folder: `Chat_Bot`
 
@@ -175,7 +177,7 @@ to run, and again whenever `db\data\knowledge\*.json` changes:
 .venv\Scripts\python -m agent.db.vector.chroma.ingest_chroma --reset
 ```
 This builds it for B1. For the other variants, use the line below and change `crewai` to that
-variant's key (`langchain`, `a2a`, `crewai` or `hybrid`):
+variant's key (`langchain`, `a2a`, `crewai`, `hybrid` or `voice`):
 ```
 .venv\Scripts\python -c "from agent_loader import mount_agent_variant; mount_agent_variant('crewai'); import sys, runpy; sys.argv=['ingest', '--reset']; runpy.run_module('agent.db.vector.chroma.ingest_chroma', run_name='__main__')"
 ```
@@ -273,12 +275,38 @@ Useful pages while it runs:
 
 More detail is in `Chat_Bot\agent (crew AI , langchain)\README.md`.
 
-### B6. Running pieces separately, or everything at once
+### B6. `voice`: Sinhala, Tamil or English, typed or spoken
+
+```
+.venv\Scripts\python launch.py up voice
+```
+Open http://localhost:8515. The backend is on port 8006.
+
+How it works: the experts only understand English, so this variant puts a translation step on
+each side of the B1 router. It first works out the language (Sinhala and Tamil have their own
+alphabets, so this needs no AI call) and translates the question into English. The experts
+answer in English, and a last step translates the answer back. English questions skip both
+steps, so they cost nothing extra; Sinhala/Tamil questions need two extra LLM calls, so they are
+slower on the free tier.
+
+Voice: click the microphone next to the paperclip, speak, then click stop - the recording is
+sent at once. The backend turns speech into text (**STT**, speech-to-text) before running the
+graph, and with **🔊 Read answers aloud** on, turns the answer into an MP3 (**TTS**,
+text-to-speech) that plays under the reply. In the sidebar, pick the language (use this if you
+type Sinhala or Tamil with Latin letters - the detector would read that as English) and toggle
+the spoken answers.
+
+Settings in `.env` (defaults need no extra keys): `STT_PROVIDER=gemini` (listen with the same
+Gemini model) or `groq` (Groq's hosted Whisper, needs `GROQ_API_KEY`); `TTS_PROVIDER=gtts`
+(Google Translate voices) or `edge` (Microsoft neural voices, including Sri Lankan ones).
+Tests that need no API key: `.venv\Scripts\python -m pytest tests -q` from `Chat_Bot`.
+
+### B7. Running pieces separately, or everything at once
 
 ```
 .venv\Scripts\python launch.py backend <key>    # only the backend
 .venv\Scripts\python launch.py ui <key>         # only the UI (its backend must be running)
-.venv\Scripts\python launch.py up all           # all five variants at once
+.venv\Scripts\python launch.py up all           # all six variants at once
 ```
 `up all` makes many LLM calls in parallel if you chat in several UIs. On the free Gemini tier,
 expect slower answers or quota errors.

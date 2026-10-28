@@ -25,6 +25,10 @@ altair
 pillow
 python-multipart
 
+# Text-to-speech for the multilingual + voice variant (no API keys; pick one with TTS_PROVIDER)
+gTTS
+edge-tts
+
 # CPU wheels for the tea-leaf disease image classifier (ClassifyLeafImage tool)
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch

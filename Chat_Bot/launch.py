@@ -1,10 +1,12 @@
-"""Start any of the four agent variants - backend, UI, or both. Run from the Chat_Bot folder.
+"""Start any of the agent variants - backend, UI, or both. Run from the Chat_Bot folder.
 
     python launch.py up agent          # backend + UI for the LangGraph router
     python launch.py up langchain      # ... the LangChain supervisor
     python launch.py up a2a            # ... the A2A network (also starts the 3 A2A expert servers)
     python launch.py up crewai         # ... the CrewAI crew
-    python launch.py up all            # all four at once
+    python launch.py up hybrid         # ... the multi-framework A2A network
+    python launch.py up voice          # ... the multilingual (Sinhala/Tamil/English) + voice router
+    python launch.py up all            # all of them at once
 
     python launch.py backend <key>     # only the FastAPI backend
     python launch.py ui <key>          # only the Streamlit UI
