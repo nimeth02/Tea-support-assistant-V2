@@ -1,9 +1,10 @@
-"""Building blocks shared by the four Streamlit UIs (app_agent.py, app_langchain.py, app_a2a.py,
-app_crewai.py).
+"""Building blocks shared by the Streamlit UIs (app_agent.py, app_langchain.py, app_a2a.py,
+app_crewai.py, app_hybrid.py, app_voice.py).
 
 Each app file only holds what is different about its variant - the intro, the diagram, what
-it shows under an answer and in the sidebar. This module holds the rest: talking to the
-backend, the chat loop, the LangSmith links and the Observability dashboard.
+it shows under an answer and in the sidebar, and (for the voice variant) a microphone next to
+the paperclip. This module holds the rest: talking to the backend, the chat loop, the LangSmith
+links and the Observability dashboard.
 """
 import os
 import sys
@@ -50,9 +51,19 @@ class UI:
         except requests.RequestException:
             return None
 
-    def send_chat(self, message: str, image_file=None) -> dict:
-        files = {"image": (image_file.name, image_file.getvalue(), image_file.type)} if image_file else None
-        resp = requests.post(f"{self.api_url}/chat", data={"message": message}, files=files,
+    def send_chat(self, message: str, image_file=None, audio_file=None, **fields) -> dict:
+        """POST /chat. `fields` are extra form fields (e.g. language="si", speak=True)."""
+        files = {}
+        if image_file:
+            files["image"] = (image_file.name, image_file.getvalue(), image_file.type)
+        if audio_file:
+            files["audio"] = (audio_file.name or "voice.wav", audio_file.getvalue(),
+                              audio_file.type or "audio/wav")
+        data = {"message": message}
+        for key, value in fields.items():
+            if value is not None:
+                data[key] = str(value).lower() if isinstance(value, bool) else value
+        resp = requests.post(f"{self.api_url}/chat", data=data, files=files or None,
                              timeout=CHAT_TIMEOUT)
         if resp.status_code != 200:
             detail = resp.json().get("detail", resp.text) if resp.headers.get(
@@ -105,15 +116,25 @@ class UI:
 
     # ------------------------------------------------------------ Chat page
     def chat_page(self, examples: List[str], intro: Callable[[], None],
-                  details: Callable[[dict], None], spinner: str) -> None:
+                  details: Callable[[dict], None], spinner: str,
+                  composer: Callable[[str], object] = None,
+                  request_fields: Callable[[], dict] = None) -> None:
         """The chat loop. `intro` draws the top of the page; `details(data)` draws the
-        variant-specific part under each answer (data = the backend's JSON reply)."""
+        variant-specific part under each answer (data = the backend's JSON reply).
+
+        Optional hooks for variants with more ways to ask:
+          composer(widget_key)  draws an extra input next to the paperclip (the voice variant's
+                                microphone) and returns a recorded audio file, or None
+          request_fields()      extra form fields to send with every message (e.g. language)
+        """
         intro()
 
         if "messages" not in st.session_state:
             st.session_state.messages = []
         if "uploader_key" not in st.session_state:
             st.session_state.uploader_key = 0
+        if "composer_key" not in st.session_state:
+            st.session_state.composer_key = 0
 
         with st.sidebar:
             st.subheader("Try asking")
@@ -131,7 +152,12 @@ class UI:
                     self._answer_footer(msg["data"], details)
 
         # ChatGPT-style attachment: a paperclip that opens the uploader; the chosen file shows as a chip.
-        attach_col, chip_col = st.columns([0.07, 0.93])
+        # A variant with a `composer` (the voice variant's microphone) gets a column for it too.
+        if composer:
+            attach_col, composer_col, chip_col = st.columns([0.07, 0.38, 0.55])
+        else:
+            attach_col, chip_col = st.columns([0.07, 0.93])
+            composer_col = None
         with attach_col:
             with st.popover("📎", help="Attach a tea leaf photo"):
                 uploaded_image = st.file_uploader(
@@ -139,6 +165,10 @@ class UI:
                     type=["jpg", "jpeg", "png"],
                     key=f"uploader_{st.session_state.uploader_key}",
                 )
+        recorded_audio = None
+        if composer_col is not None:
+            with composer_col:
+                recorded_audio = composer(f"composer_{st.session_state.composer_key}")
         with chip_col:
             if uploaded_image:
                 thumb_col, name_col, remove_col = st.columns([0.1, 0.8, 0.1])
@@ -151,15 +181,20 @@ class UI:
                         st.session_state.uploader_key += 1
                         st.rerun()
 
-        prompt = st.chat_input("Type your question…") or st.session_state.pop("pending", None)
-        if not prompt and not uploaded_image:
+        typed = st.chat_input("Type your question…") or st.session_state.pop("pending", None)
+        if not typed and not uploaded_image and not recorded_audio:
             return
-        prompt = prompt or "What disease or pest is affecting this tea leaf?"
+        # A photo on its own asks the default disease question. A voice clip on its own is sent
+        # with an empty message - the backend turns the speech into text.
+        prompt = typed or ("" if recorded_audio else "What disease or pest is affecting this tea leaf?")
 
         if uploaded_image:
             st.session_state.uploader_key += 1  # clear the attachment now that it's being sent
+        if recorded_audio:
+            st.session_state.composer_key += 1  # clear the recording too
 
-        display_text = prompt + (" 📷" if uploaded_image else "")
+        display_text = (prompt or "🎤 Voice message") + (" 🎤" if typed and recorded_audio else "") \
+            + (" 📷" if uploaded_image else "")
         st.session_state.messages.append({"role": "user", "content": display_text})
         with st.chat_message("user"):
             st.markdown(display_text)
@@ -167,11 +202,15 @@ class UI:
         with st.chat_message("assistant"):
             with st.spinner(spinner):
                 try:
-                    data = self.send_chat(prompt, uploaded_image)
+                    data = self.send_chat(prompt, uploaded_image, recorded_audio,
+                                          **(request_fields() if request_fields else {}))
                 except requests.RequestException as e:
                     data = {"response": f"⚠️ Could not reach the backend at {self.api_url}: {e}",
                             "intent": "error"}
             data["has_image"] = bool(uploaded_image)
+            if data.get("transcript") and not typed:
+                # Replace the "Voice message" placeholder with the words the backend heard.
+                st.session_state.messages[-1]["content"] = f"🎤 {data['transcript']}" + (" 📷" if uploaded_image else "")
             answer = data.get("response") or "_No answer — the model may be rate limited, try again in a minute._"
             st.markdown(answer)
             self._answer_footer(data, details)

@@ -53,9 +53,9 @@ copy .env.example .env        # then set GEMINI_API_KEY
 .venv\Scripts\python -m streamlit run frontend\streamlit_app.py --server.port 8510
 ```
 
-## Agent variants (four versions, four UIs, four LangSmith projects)
+## Agent variants (one backend, one UI and one LangSmith project each)
 
-The same tea assistant is built four ways. Each one has its own backend, its own Streamlit UI and
+The same tea assistant is built several ways. Each one has its own backend, its own Streamlit UI and
 its own LangSmith project, so you can compare them side by side:
 
 | key | folder | how it works | backend | UI | LangSmith project |
@@ -64,12 +64,43 @@ its own LangSmith project, so you can compare them side by side:
 | `langchain` | `agent (langchain)/` | Supervisor LLM calls experts as tools | :8002 | http://localhost:8511 | `tea-support-agent-langchain` |
 | `a2a` | `agent A2A/` | Supervisor messages expert servers over A2A (also :9101-9103) | :8003 | http://localhost:8512 | `tea-support-agent-a2a` |
 | `crewai` | `agent (crewAI)/` | CrewAI manager delegates to expert crew members | :8004 | http://localhost:8513 | `tea-support-agent-crewai` |
+| `hybrid` | `agent (crew AI , langchain)/` | LangChain supervisor + CrewAI/LangChain/LangGraph experts over A2A (also :9201-9203) | :8005 | http://localhost:8514 | `tea-support-agent-hybrid` |
+| `voice` | `agent multilangual and voice also/` | LangGraph router + Sinhala/Tamil/English translation + speech in/out | :8006 | http://localhost:8515 | `tea-support-agent-voice` |
 
 ```
 .venv\Scripts\python launch.py up langchain   # backend + UI for one variant (Ctrl+C stops both)
-.venv\Scripts\python launch.py up all         # all four at once
+.venv\Scripts\python launch.py up all         # all of them at once
 .venv\Scripts\python launch.py list           # ports and LangSmith projects
 ```
+
+### Multilingual + voice variant (`voice`)
+
+Farmers can ask in **Sinhala, Tamil or English**, typed or spoken, and get the answer in the same
+language, optionally read out loud. The experts themselves are unchanged and still work in English;
+the graph wraps them:
+
+```
+detect_language -> classify_intent -> <expert | unknown> -> translate_response -> END
+```
+
+- `detect_language` (`agents/orchestrator/orchestrator_agent.py`) picks the language - from the UI's
+  choice, or by looking at the script: Sinhala and Tamil each have their own Unicode block, so this is
+  free - and translates the question into English with the LLM (`services/language_service.py`,
+  prompts in `prompt_templates/translate_prompt.py`). Latin-letter text counts as English, so romanized
+  Sinhala/Tamil should be sent with an explicit `language`.
+- `translate_response` translates the English answer back. English questions skip both steps, so they
+  cost no extra LLM calls; Sinhala/Tamil questions cost two.
+- **Voice** lives in the backend, not the graph (`services/speech_service.py`): `POST /chat` accepts an
+  `audio` file (the Streamlit microphone records WAV), turns it into text (`STT_PROVIDER`: `gemini`
+  listens with the same Gemini chat model; `groq` uses Groq's hosted Whisper), and runs the text through
+  the graph as usual. With `speak=true` the answer is also turned into an MP3 (`TTS_PROVIDER`: `gtts` or
+  `edge`, no keys) saved under `data/audio/` and served at `GET /audio/{trace_id}`.
+- New `POST /chat` form fields: `audio`, `language` (`auto`/`en`/`si`/`ta`, see `GET /languages`),
+  `speak`. New reply fields: `language`, `original_query`, `translated_query`, `transcript`, `audio_url`.
+  The other variants accept the same request shape but reject `audio` and non-English `language`.
+- UI (`frontend/app_voice.py`): language picker and "read aloud" toggle in the sidebar, a microphone
+  next to the paperclip (stopping the recording sends it), the heard transcript and English translation
+  under each answer, and the spoken answer with a player.
 
 Why separate processes: every variant's code imports itself as `agent` (`from agent.config ...`),
 so two variants can't be loaded in one Python process. `agent_loader.py` makes the chosen folder
